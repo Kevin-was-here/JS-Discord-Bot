@@ -1,0 +1,26 @@
+{
+  "name": "js-discord-bot",
+  "version": "1.0.0",
+  "description": "��#\u0000 \u0000J\u0000S\u0000-\u0000D\u0000i\u0000s\u0000c\u0000o\u0000r\u0000d\u0000-\u0000B\u0000o\u0000t\u0000\r\u0000 \u0000",
+  "main": "bot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kevin-was-here/JS-Discord-Bot.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Kevin-was-here/JS-Discord-Bot/issues"
+  },
+  "homepage": "https://github.com/Kevin-was-here/JS-Discord-Bot#readme",
+  "dependencies": {
+    "api": "^4.5.1",
+    "discord": "^0.8.2",
+    "discord-api-types": "^0.36.1",
+    "discord-player": "^5.2.2",
+    "ffmpeg-static": "^4.4.1"
+  }
+}

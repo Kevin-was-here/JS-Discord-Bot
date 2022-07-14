@@ -1,40 +1,72 @@
-const fs = require('node:fs');
-const path = require('node:path');
-const { Client, Intents, Collection } = require('discord.js');
-const { token } = require('./config.json');
+const Discord = require("discord.js")
+const dotenv = require("dotenv")
+const { REST } = require("@discordjs/rest")
+const { Routes } = require("discord-api-types/v9")
+const fs = require("fs")
+const { Player } = require("discord-player")
+const { token, clientId, guildId } = require("./config.json")
 
-const client = new Client({ intents: [
-	Intents.FLAGS.GUILDS
-] });
+const LOAD_SLASH = process.argv[2] =="load"
 
-client.commands = new Collection();
-const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+//Intents
+const client = new Discord.Client({
+    intents: [
+        "GUILDS",
+        "GUILD_MEMBERS",
+        "GUILD_MESSAGES",
+        "GUILD_VOICE_STATES"
+    ],
+    disableMentions: 'everyone',
+});
 
-for (const file of commandFiles) {
-	const filePath = path.join(commandsPath, file);
-	const command = require(filePath);
-	// Set a new item in the Collection
-	// With the key as the command name and the value as the exported module
-	client.commands.set(command.data.name, command);
+//Player variables
+client.slashcommands = new Discord.Collection()
+client.player = new Player(client, {
+	ytdlOptions:{
+		quality: "highestaudio",
+		highWaterMark: 1 << 25
+	}
+
+})
+
+let commands = [];
+const slashFiles = fs.readdirSync("./commands").filter(file => file.endsWith(".js"))
+for (const file of slashFiles){
+    const slashcmd = require(`./commands/${file}`)
+	client.slashcommands.set(slashcmd.data.name, slashcmd);
+	if (LOAD_SLASH) commands.push(slashcmd.data.toJSON());
 }
 
+if (LOAD_SLASH) {
+    const rest = new REST({ version: "9" }).setToken(token)
+    console.log("Deploying slash commands")
+    rest.put(Routes.applicationGuildCommands(clientId, guildId), {body: commands})
+    .then(() => {
+        console.log("Successfully loaded")
+        process.exit(0)
+    })
+    .catch((err) => {
+        if (err){
+            console.log(err)
+            process.exit(1)
+        }
+    })
+}
+else {
+    client.on("ready", () => {
+        console.log(`Logged in as ${client.user.tag}`)
+    })
+    client.on("interactionCreate", (interaction) => {
+        async function handleCommand() {
+            if (!interaction.isCommand()) return
 
-client.once('ready', () => {
-	console.log('Ready!');
-});
+            const slashcmd = client.slashcommands.get(interaction.commandName)
+            if (!slashcmd) interaction.reply("Not a valid slash command")
 
-client.on('interactionCreate', async interaction => {
-	if (!interaction.isCommand()) return;
-
-	const command = client.commands.get(interaction.commandName);
-	if (!command) return;
-	try{
-		await command.execute(interaction);
-	}catch(error){
-		console.error(error);
-		await interaction.reply({content: 'There was an error while executing this command!', ephemeral: true});
-	}
-});
-
-client.login(token);
+            await interaction.deferReply()
+            await slashcmd.run({ client, interaction })
+        }
+        handleCommand()
+    })
+    client.login(token)
+}
